@@ -47,14 +47,46 @@ async def parse_speech(
     )
     metadata = date_match.group(0) if date_match else None
 
-    divider = soup.find(string=re.compile(r"\*\s*\*\s*\*"))
-    start = divider.parent if divider else soup
-    paragraphs = [
-        p.get_text(strip=True)
-        for p in start.find_all_next("p")
-        if p.get_text(strip=True) and "© Dicastero per la Comunicazione" not in p.text
-    ]
-    text_body = "\n\n".join(paragraphs).strip()
+    header = soup.find("h1") or soup.find("h2")
+    if header and header.get_text(strip=True):
+        title = header.get_text(strip=True)
+        # then fall back to <p> parsing for body as before...
+        paras = [
+            p.get_text(" ", strip=True)
+            for p in soup.find_all("p")
+            if p.get_text(strip=True)
+               and "Dicastero per la Comunicazione" not in p.text
+        ]
+        text_body = "\n\n".join(paras).strip()
+
+    else:
+        # Minimal-markup case: everything lives under div.text.parbase.vaticanrichtext
+        container = soup.find("div", class_="text parbase vaticanrichtext")
+        if not container:
+            # ultimate fallback: raw-text split
+            raw = soup.get_text("\n")
+            text_body = "\n\n".join([ln for ln in raw.splitlines() if ln.strip()])
+            title = ""
+        else:
+            # Title = first centered <p>
+            p_center = container.find("p", align="center")
+            title = p_center.get_text(" ", strip=True) if p_center else ""
+
+            # Body = all other <p> after that one
+            paras = []
+            seen_title = False
+            # new: also skip the “[ Multimedia ]” line
+            paras = []
+            for p in soup.find_all("p"):
+                txt = p.get_text(" ", strip=True)
+                if not txt:
+                    continue
+                if "Dicastero per la Comunicazione" in txt:
+                    continue
+                if txt == "[ Multimedia ]":
+                    continue
+                paras.append(txt)
+            text_body = "\n\n".join(paras).strip()
 
     return Speech(url=url, title=title, text_body=text_body, metadata=metadata)
 
@@ -87,10 +119,13 @@ async def scrape_speeches(
 
 if __name__ == "__main__":
     
-    urls = [u.strip() for u in open("data/speech_urls.txt")]
+    urls = [u.strip() for u in open("data/speech_urls.txt")][:]
     all_speeches = asyncio.run(scrape_speeches(urls, concurrency=10))
 
     out_path = Path("data/speeches.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    
     with open(out_path, "w") as f:
-        json.dump([s.dict() for s in all_speeches], f, indent=2)
+        
+        # default=str to handle HttpUrl
+        json.dump([s.model_dump() for s in all_speeches], f, indent=2, default=str)
