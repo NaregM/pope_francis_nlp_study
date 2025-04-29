@@ -1,5 +1,4 @@
 # pope_francis_nlp_study
-![Pope Francis Ghibli Style](assets/pope_francis_ghibli_small.png)
 <img src="assets/pope_francis_ghibli_small.png" width="200"/>
 
 
