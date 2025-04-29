@@ -1,0 +1,8 @@
+# Treat all .ipynb notebooks as documentation (so they’re NOT in the language bar)
+*.ipynb linguist-documentation
+
+# Or mark them as generated (same effect)
+# *.ipynb linguist-generated=true
+
+# Force any .py scripts to always be counted as Python
+*.py linguist-language=Python
