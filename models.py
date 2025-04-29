@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from typing import Optional
 
 # --------------------------------------------------------------------------------------------
@@ -6,7 +6,7 @@ from typing import Optional
 # --------------------------------------------------------------------------------------------
 
 class Speech(BaseModel):
-    url: str
+    url: HttpUrl
     title: str
     text_body:str
-    metadata: Optional[str] = Mpme
+    metadata: Optional[str] = None
