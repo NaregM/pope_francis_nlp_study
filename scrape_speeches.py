@@ -9,6 +9,9 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 import asyncio
 
+import json
+from pathlib import Path
+
 from models import Speech
 
 # -----------------------------------------------------------------------------------------
@@ -77,3 +80,17 @@ async def scrape_speeches(
                 pass
             
     return speeches
+
+
+# ---------------------------------------------------------------------------------------------------
+
+
+if __name__ == "__main__":
+    
+    urls = [u.strip() for u in open("data/speech_urls.txt")]
+    all_speeches = asyncio.run(scrape_speeches(urls, concurrency=10))
+
+    out_path = Path("data/speeches.json")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump([s.dict() for s in all_speeches], f, indent=2)
